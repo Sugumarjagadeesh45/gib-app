@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1080217412016",
+    "project_id": "reactnativephoneauth-bbba6",
+    "storage_bucket": "reactnativephoneauth-bbba6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1080217412016:android:3f006abcad8d7954313675",
+        "android_client_info": {
+          "package_name": "com.gib_unite.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBBUJeSiSu3hh54BrXTf67QslegX8IMEVk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1080217412016:android:c3d5957c6666d15e313675",
+        "android_client_info": {
+          "package_name": "com.gibapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBBUJeSiSu3hh54BrXTf67QslegX8IMEVk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

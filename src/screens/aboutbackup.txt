@@ -1,0 +1,403 @@
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  FlatList,
+   ImageBackground,
+  Image,
+  TouchableOpacity,
+  Modal,
+  StyleSheet,
+  ActivityIndicator,
+  SafeAreaView,
+  Linking,
+  ScrollView,
+ 
+} from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
+
+type User = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string;
+  profile_image: string;
+  kootam?: string;
+  business_name?: string;
+  edu_qualification?: string | null;
+  aadhaar?: string | null;
+  father_name?: string | null;
+  spouse_name?: string | null;
+  native_address?: string | null;
+  blood_group?: string | null;
+  date_birth?: string | null;
+  business_details?: string | null;
+  company_address?: string | null;
+  ownership_type?: string | null;
+  website_url?: string | null;
+};
+
+const UserDirectoryScreen = () => {
+  const [users, setUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [searchText, setSearchText] = useState('');
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [tabIndex, setTabIndex] = useState(0);
+  const bloodGroups = ['All', 'A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
+  const [selectedBloodGroup, setSelectedBloodGroup] = useState('All');
+
+useEffect(() => {
+  fetchUsers();
+  const intervalId = setInterval(() => {
+    fetchUsers();
+  }, 50000);
+  return () => clearInterval(intervalId);
+}, []);
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('https://www.giberode.com/giberode_app/get_all_users.php');
+      const data = await response.json();
+      if (data.success && Array.isArray(data.users)) {
+        data.users.forEach((user: User) => {
+          if (user.profile_image) {
+            Image.prefetch(user.profile_image);
+          }
+        });
+        setUsers(data.users);
+        setFilteredUsers(data.users);
+      } else {
+        console.error('Unexpected API response:', data);
+      }
+    } catch (err) {
+      console.error('Error fetching users:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = (text: string, bloodGroupFilter = selectedBloodGroup) => {
+    setSearchText(text);
+
+    const lowerText = text.toLowerCase();
+
+    const filtered = users.filter(user => {
+      const matchesSearch =
+        user.name.toLowerCase().includes(lowerText) ||
+        (user.business_name && user.business_name.toLowerCase().includes(lowerText)) ||
+        user.phone.includes(lowerText);
+
+      const matchesBloodGroup =
+        bloodGroupFilter === 'All' || user.blood_group === bloodGroupFilter;
+
+      return matchesSearch && matchesBloodGroup;
+    });
+
+    setFilteredUsers(filtered);
+  };
+
+  const openUserModal = (user: User) => {
+    setTabIndex(0);
+    setSelectedUser(user);
+  };
+
+  const renderItem = ({ item }: { item: User }) => (
+    <View style={styles.card}>
+      <TouchableOpacity onPress={() => openUserModal(item)} style={styles.profileInfo}>
+        <Image source={{ uri: item.profile_image }} style={styles.avatar} />
+        <Text style={styles.name}>{item.name}</Text>
+      </TouchableOpacity>
+
+        <View style={styles.actionIcons}>
+        <TouchableOpacity onPress={() => Linking.openURL(`tel:${item.phone}`)} style={styles.iconButton}>
+          <View style={{ backgroundColor: '#fff', padding: 5, borderRadius: 30, alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name="call" size={22} color="#4CAF50" />
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => Linking.openURL(`https://wa.me/${item.phone}`)} style={styles.iconButton}>
+          <View style={{ backgroundColor: '#fff', padding: 5, borderRadius: 30, alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name="logo-whatsapp" size={24} color="#25D366" />
+          </View>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  return (
+    <ImageBackground source={require('../assets/bg05.jpeg')} style={styles.background} resizeMode="cover">
+    <SafeAreaView style={styles.container}>
+         <View>
+          <Text style={{ padding: 10, color: '#fff' }}>Blood Group</Text>
+        </View>
+      <View style={{ flexDirection: 'row', marginBottom: 10 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 16 }}>
+          {bloodGroups.map(group => (
+            <TouchableOpacity
+              key={group}
+              style={[
+                styles.chip,
+                { alignSelf: 'flex-start' },
+                selectedBloodGroup === group && styles.selectedChip
+              ]}
+              onPress={() => {
+                setSelectedBloodGroup(group);
+                handleSearch(searchText, group);
+              }}
+            >
+              <Text
+                style={[
+                  styles.chipText,
+                  selectedBloodGroup === group && styles.selectedChipText
+                ]}
+              >
+                {group}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
+      <TextInput
+        placeholder="Search Name, Business Name, Phone Number..."
+        value={searchText}
+        onChangeText={handleSearch}
+        style={styles.searchInput}
+      />
+
+      {loading ? (
+        <ActivityIndicator size="large" color="#000" style={{ marginTop: 20 }} />
+      ) : (
+        <FlatList
+          data={filteredUsers}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderItem}
+          contentContainerStyle={{ paddingBottom: 20 }}
+          style={{ flex: 1 }}
+        />
+      )}
+
+      {selectedUser && (
+        <Modal
+          visible
+          transparent
+          animationType="slide"
+          onRequestClose={() => setSelectedUser(null)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Image source={{ uri: selectedUser.profile_image }} style={styles.modalImage} resizeMode="cover" />
+              <Text style={styles.modalName}>{selectedUser.name}</Text>
+              <Text style={styles.modalKootam}>Kootam: {selectedUser.kootam || 'N/A'}</Text>
+
+              <View style={styles.tabSwitcher}>
+                <TouchableOpacity
+                  style={[styles.tabButton, tabIndex === 0 && styles.activeTab]}
+                  onPress={() => setTabIndex(0)}
+                >
+                  <Text style={[styles.tabText, tabIndex === 0 && styles.activeTabText]}>Personal</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.tabButton, tabIndex === 1 && styles.activeTab]}
+                  onPress={() => setTabIndex(1)}
+                >
+                  <Text style={[styles.tabText, tabIndex === 1 && styles.activeTabText]}>Business</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.tabContent}>
+                {tabIndex === 0 ? (
+                  <>
+                    <Text>Email: {selectedUser.email || 'N/A'}</Text>
+                    <Text>Phone: {selectedUser.phone || 'N/A'}</Text>
+                    <Text>Blood Group: {selectedUser.blood_group || 'N/A'}</Text>
+                    <Text>Father Name: {selectedUser.father_name || 'N/A'}</Text>
+                    <Text>Spouse Name: {selectedUser.spouse_name || 'N/A'}</Text>
+                    <Text>Education: {selectedUser.edu_qualification || 'N/A'}</Text>
+                    <Text>Date of Birth: {selectedUser.date_birth || 'N/A'}</Text>
+                    <Text>Address: {selectedUser.native_address || 'N/A'}</Text>
+                  </>
+                ) : (
+                  <>
+                    <Text>Business Name: {selectedUser.business_name || 'N/A'}</Text>
+                    <Text>Business Details: {selectedUser.business_details || 'N/A'}</Text>
+                    <Text>Company Address: {selectedUser.company_address || 'N/A'}</Text>
+                    <Text>Ownership: {selectedUser.ownership_type || 'N/A'}</Text>
+                    <Text>Website: {selectedUser.website_url || 'N/A'}</Text>
+                  </>
+                )}
+              </View>
+
+              <TouchableOpacity onPress={() => setSelectedUser(null)} style={styles.closeBtn}>
+                <Text style={styles.closeText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      )}
+    </SafeAreaView>
+    </ImageBackground>
+  );
+};
+
+export default UserDirectoryScreen;
+
+const styles = StyleSheet.create({
+    background: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  container: {
+    flex: 1,
+    paddingHorizontal: 16,
+    // backgroundColor: '#f9f9f9',
+  },
+  searchInput: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    marginBottom: 12,
+  },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 20,
+    marginRight: 8,
+    // borderWidth: 1,
+    // borderColor: '#ccc',
+  },
+  selectedChip: {
+    backgroundColor: 'green',
+    // borderColor: '#000',
+  },
+  chipText: {
+    color: '#444',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  selectedChipText: {
+    color: '#fff',
+  },
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    marginVertical: 6,
+    marginHorizontal: 2,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255, 255, 255, 0.33)',
+
+    marginBottom: 20,
+    borderColor: 'rgba(255, 255, 255, 0.49)',
+    borderWidth: 1,
+    // elevation: 5,
+
+    justifyContent: 'space-between',
+  },
+  profileInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  avatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    marginRight: 14,
+    backgroundColor: '#ddd',
+  },
+  name: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  actionIcons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  iconButton: {
+    padding: 6,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 16,
+    width: '92%',
+    maxHeight: '88%',
+  },
+  modalImage: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    alignSelf: 'center',
+    marginBottom: 14,
+    backgroundColor: '#eee',
+  },
+  modalName: {
+    fontSize: 22,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 6,
+    color: '#222',
+  },
+  modalKootam: {
+    textAlign: 'center',
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 16,
+  },
+  tabSwitcher: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    marginBottom: 12,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 10,
+    backgroundColor: '#eee',
+    marginHorizontal: 4,
+    borderRadius: 8,
+  },
+  activeTab: {
+    backgroundColor: '#000',
+  },
+  tabText: {
+    textAlign: 'center',
+    fontWeight: '600',
+    color: '#444',
+    fontSize: 14,
+  },
+  activeTabText: {
+    color: '#fff',
+  },
+  tabContent: {
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  closeBtn: {
+    marginTop: 20,
+    backgroundColor: '#000',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  closeText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+});

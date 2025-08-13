@@ -1,0 +1,136 @@
+<?php
+// Enable error reporting
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+// Headers
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
+header("Content-Type: application/json");
+
+// Include DB credentials
+include 'db.php';
+
+// Connect to DB
+$conn = new mysqli($servername, $username, $password, $dbname);
+if ($conn->connect_error) {
+    echo json_encode(["status" => "error", "message" => "Database connection failed", "error" => $conn->connect_error]);
+    exit();
+}
+
+// Create upload folder if it doesn't exist
+$uploadDir = "Bill/";
+if (!is_dir($uploadDir)) {
+    mkdir($uploadDir, 0777, true);
+}
+
+// Handle file upload (optional)
+$filePath = null;
+if (isset($_FILES['attachment']) && $_FILES['attachment']['error'] == UPLOAD_ERR_OK) {
+    $fileTmpPath = $_FILES['attachment']['tmp_name'];
+    $fileName = basename($_FILES['attachment']['name']);
+    $safeFileName = time() . "_" . preg_replace("/[^a-zA-Z0-9.\-_]/", "_", $fileName);
+    $destination = $uploadDir . $safeFileName;
+
+    if (move_uploaded_file($fileTmpPath, $destination)) {
+        $filePath = "https://www.giberode.com/giberode_app/" . $destination;
+    } else {
+        echo json_encode(["status" => "error", "message" => "File upload failed"]);
+        exit();
+    }
+}
+
+// Get form-data values
+$from_phone = $_POST['from_phone'] ?? '';
+$to_phone = $_POST['to_phone'] ?? '';
+$business_amount = $_POST['business_amount'] ?? '';
+$given_take_input = trim($_POST['given_take'] ?? '');
+$given_take = ucfirst(strtolower($given_take_input));
+
+// Validate required fields
+if (!$from_phone || !$to_phone || !$business_amount || !$given_take) {
+    echo json_encode(["status" => "error", "message" => "Missing required fields"]);
+    exit();
+}
+
+// Validate given_take
+if ($given_take !== "Given" && $given_take !== "Taken") {
+    echo json_encode(["status" => "error", "message" => "Invalid value for given_take. Must be 'Given' or 'Taken'"]);
+    exit();
+}
+
+// Prevent same phone for from and to
+if ($from_phone === $to_phone) {
+    echo json_encode(["status" => "error", "message" => "Sender and receiver cannot be the same"]);
+    exit();
+}
+
+$to_given_take = ($given_take === "Given") ? "Taken" : "Given";
+
+// Fetch users
+$from_result = $conn->query("SELECT * FROM users WHERE phone = '$from_phone'");
+$to_result = $conn->query("SELECT * FROM users WHERE phone = '$to_phone'");
+
+if ($from_result->num_rows === 0 || $to_result->num_rows === 0) {
+    echo json_encode(["status" => "error", "message" => "User not found"]);
+    exit();
+}
+
+$from_user = $from_result->fetch_assoc();
+$to_user = $to_result->fetch_assoc();
+
+// Prepare user fields
+$from_name = $from_user['name'] ?? '';
+$from_business_name = $from_user['business_name'] ?? '';
+$from_team_name = $from_user['team_name'] ?? '';
+
+$to_name = $to_user['name'] ?? '';
+$to_business_name = $to_user['business_name'] ?? '';
+$to_team_name = $to_user['team_name'] ?? '';
+
+$created_at = date('Y-m-d H:i:s');
+
+// Prepare and validate SQL insert
+$sql = "INSERT INTO thanksnote (
+    from_name, from_business_name, from_phone, from_team_name,
+    to_name, to_business_name, to_phone, to_team_name,
+    business_amount, given_take, to_given_take, created_at, file_path
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+$stmt = $conn->prepare($sql);
+if (!$stmt) {
+    echo json_encode([
+        "status" => "error",
+        "message" => "SQL prepare failed",
+        "sql_error" => $conn->error
+    ]);
+    exit();
+}
+
+$stmt->bind_param(
+    "sssssssssssss",
+    $from_name, $from_business_name, $from_phone, $from_team_name,
+    $to_name, $to_business_name, $to_phone, $to_team_name,
+    $business_amount, $given_take, $to_given_take, $created_at, $filePath
+);
+
+if ($stmt->execute()) {
+    echo json_encode([
+        "status" => "success",
+        "message" => "Thanksnote inserted successfully",
+        "inserted_id" => $stmt->insert_id,
+        "file_url" => $filePath
+    ]);
+} else {
+    echo json_encode([
+        "status" => "error",
+        "message" => "Insert failed",
+        "sql_error" => $stmt->error
+    ]);
+}
+
+$stmt->close();
+$conn->close();
+?>

@@ -1,0 +1,66 @@
+    
+    // Flatlist users
+    {selectedUser && (
+          <Modal
+            visible
+            transparent
+            animationType="none"
+            onRequestClose={() => setSelectedUser(null)}
+          >
+            <Animated.View style={[styles.modalOverlay, { opacity: modalFadeAnim }]}>
+              <View style={styles.modalContent}>
+                <Image source={{ uri: selectedUser.profile_image }} style={styles.modalImage} resizeMode="cover" />
+                <Text style={styles.modalName}>{selectedUser.name}</Text>
+                <Text style={styles.modalKootam}>Kootam: {selectedUser.kootam || 'N/A'}</Text>
+
+                <View style={styles.tabSwitcher}>
+                  <TouchableOpacity style={[styles.tabButton, tabIndex === 0 && styles.activeTab]} onPress={() => setTabIndex(0)}>
+                    <Icon name="person" size={24} color={tabIndex === 0 ? '#fff' : '#444'} style={styles.tabIcon} />
+                    <Text style={[styles.tabText, tabIndex === 0 && styles.activeTabText]}>Personal</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.tabButton, tabIndex === 1 && styles.activeTab]} onPress={() => setTabIndex(1)}>
+                    <Icon name="business" size={24} color={tabIndex === 1 ? '#fff' : '#444'} style={styles.tabIcon} />
+                    <Text style={[styles.tabText, tabIndex === 1 && styles.activeTabText]}>Business</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.tabContent}>
+                  {tabIndex === 0 ? (
+                    <>
+                      {/* Personal Info */}
+                      <View style={styles.row}><Icon name="mail" size={18} color="#777" style={styles.icon} /><Text style={styles.labelText}>Email:</Text><Text style={styles.modalText}>{selectedUser.email || 'N/A'}</Text></View>
+                      <View style={styles.row}><Icon name="call" size={18} color="#777" style={styles.icon} /><Text style={styles.labelText}>Phone:</Text><Text style={styles.modalText}>{selectedUser.phone || 'N/A'}</Text></View>
+                      <View style={styles.row}><Icon name="medkit" size={18} color="#777" style={styles.icon} /><Text style={styles.labelText}>Blood Group:</Text><Text style={styles.modalText}>{selectedUser.blood_group || 'N/A'}</Text></View>
+                      <View style={styles.row}><Icon name="person" size={18} color="#777" style={styles.icon} /><Text style={styles.labelText}>Father Name:</Text><Text style={styles.modalText}>{selectedUser.father_name || 'N/A'}</Text></View>
+                      <View style={styles.row}><Icon name="heart" size={18} color="#777" style={styles.icon} /><Text style={styles.labelText}>Spouse Name:</Text><Text style={styles.modalText}>{selectedUser.spouse_name || 'N/A'}</Text></View>
+                      <View style={styles.row}><Icon name="school" size={18} color="#777" style={styles.icon} /><Text style={styles.labelText}>Education:</Text><Text style={styles.modalText}>{selectedUser.edu_qualification || 'N/A'}</Text></View>
+                      <View style={styles.row}><Icon name="location" size={18} color="#777" style={styles.icon} /><Text style={styles.labelText}>Native Address:</Text><Text style={styles.modalText}>{selectedUser.native_address || 'N/A'}</Text></View>
+                    </>
+                  ) : (
+                    <>
+                      {/* Business Info */}
+                      <View style={styles.row}><Icon name="business" size={18} color="#777" style={styles.icon} /><Text style={styles.labelText}>Business Name:</Text><Text style={styles.modalText}>{selectedUser.business_name || 'N/A'}</Text></View>
+                      <View style={styles.row}><Icon name="location-outline" size={18} color="#777" style={styles.icon} /><Text style={styles.labelText}>Company Address:</Text><Text style={styles.modalText}>{selectedUser.company_address || 'N/A'}</Text></View>
+                      <View style={styles.row}><Icon name="clipboard" size={18} color="#777" style={styles.icon} /><Text style={styles.labelText}>Business Details:</Text><Text style={styles.modalText}>{selectedUser.BusinessNature || 'N/A'}</Text></View>
+                      <View style={styles.row}><Icon name="globe" size={18} color="#777" style={styles.icon} /><Text style={styles.labelText}>Website:</Text><Text style={styles.modalText}>{selectedUser.website_url || 'N/A'}</Text></View>
+                    </>
+                  )}
+                </View>
+
+                <TouchableOpacity
+                  style={styles.closeBtn}
+                  onPress={() => {
+                    setSelectedUser(null);
+                    Animated.timing(modalFadeAnim, {
+                      toValue: 0,
+                      duration: 200,
+                      useNativeDriver: true,
+                    }).start();
+                  }}
+                >
+                  <Text style={styles.closeText}>Close</Text>
+                </TouchableOpacity>
+              </View>
+            </Animated.View>
+          </Modal>
+        )}

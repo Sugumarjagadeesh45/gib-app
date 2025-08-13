@@ -1,0 +1,69 @@
+<?php
+header("Content-Type: application/json");
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: POST");
+header("Access-Control-Allow-Headers: Content-Type");
+
+include 'db.php';
+
+// Validate request method
+if ($_SERVER["REQUEST_METHOD"] != "POST") {
+    echo json_encode(["status" => "error", "message" => "Invalid request method"]);
+    exit;
+}
+
+// Read input JSON
+$data = json_decode(file_get_contents("php://input"), true);
+$phone = $data['phone'] ?? '';
+$device_id = $data['device_id'] ?? '';
+
+// Validate input
+if (empty($phone) || empty($device_id)) {
+    echo json_encode(["status" => "error", "message" => "Phone and device ID are required"]);
+    exit;
+}
+
+// Fetch user details by phone number
+$stmt = $conn->prepare("SELECT id, name, phone, profile_image, device_id FROM users WHERE phone = ?");
+$stmt->bind_param("s", $phone);
+$stmt->execute();
+$result = $stmt->get_result();
+$user = $result->fetch_assoc();
+$stmt->close();
+
+if ($user) {
+    // Normalize device IDs for comparison (trim and lowercase)
+    $db_device_id = trim(strtolower($user['device_id']));
+    $req_device_id = trim(strtolower($device_id));
+
+    // Check if user is logged in on another device
+    if (!empty($db_device_id) && $db_device_id !== $req_device_id) {
+        echo json_encode([
+            "status" => "error",
+            "message" => "User already logged in on another device"
+        ]);
+        exit;
+    }
+
+    // Update device_id to current device_id (even if same, just to be safe)
+    $update = $conn->prepare("UPDATE users SET device_id = ? WHERE phone = ?");
+    $update->bind_param("ss", $device_id, $phone);
+    $update->execute();
+    $update->close();
+
+    echo json_encode([
+        "status" => "success",
+        "message" => "Login successful",
+        "user" => [
+            "id" => $user['id'],
+            "name" => $user['name'],
+            "phone" => $user['phone'],
+            "profile_image" => $user['profile_image']
+        ]
+    ]);
+} else {
+    echo json_encode(["status" => "error", "message" => "User not found"]);
+}
+
+$conn->close();
+?>

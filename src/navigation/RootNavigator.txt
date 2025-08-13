@@ -1,0 +1,17 @@
+import React from 'react';
+import { createDrawerNavigator } from '@react-navigation/drawer';
+import BottomTabs from './BottomTabs';
+import DrawerContent from '../components/DrawerContent';
+
+const Drawer = createDrawerNavigator();
+
+export default function RootNavigator() {
+  return (
+    <Drawer.Navigator
+      drawerContent={(props) => <DrawerContent {...props} />}
+      screenOptions={{ headerShown: false }}
+    >
+      <Drawer.Screen name="MainApp" component={BottomTabs} />
+    </Drawer.Navigator>
+  );
+}
